@@ -1,0 +1,10 @@
+# 社外秘（講座本文・画像）は公開リポに出さない
+*.pyc
+.DS_Store
+BUILD_SPEC.md
+__pycache__/
+content/
+pipeline/
+qa/
+setup/
+setup/REPORT-*.md

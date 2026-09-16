@@ -1,0 +1,252 @@
+{
+ "generated_at": "2026-09-17T00:50:58+09:00",
+ "categories": [
+  {
+   "id": "intro",
+   "name": "はじめに",
+   "parent_id": null,
+   "sort_order": 10,
+   "description": ""
+  },
+  {
+   "id": "setup",
+   "name": "セットアップ",
+   "parent_id": null,
+   "sort_order": 20,
+   "description": ""
+  },
+  {
+   "id": "setup-selfunderstanding",
+   "name": "自己理解",
+   "parent_id": "setup",
+   "sort_order": 21,
+   "description": ""
+  },
+  {
+   "id": "setup-schoolmanner",
+   "name": "スクールマナー",
+   "parent_id": "setup",
+   "sort_order": 22,
+   "description": ""
+  },
+  {
+   "id": "setup-mind",
+   "name": "マインドセット",
+   "parent_id": "setup",
+   "sort_order": 23,
+   "description": ""
+  },
+  {
+   "id": "setup-basic",
+   "name": "基礎",
+   "parent_id": "setup",
+   "sort_order": 24,
+   "description": ""
+  },
+  {
+   "id": "setup-how-to",
+   "name": "コンテンツサイトの進め方",
+   "parent_id": "setup",
+   "sort_order": 25,
+   "description": ""
+  },
+  {
+   "id": "practical",
+   "name": "実践",
+   "parent_id": null,
+   "sort_order": 30,
+   "description": ""
+  },
+  {
+   "id": "practical-procurement",
+   "name": "仕入れ",
+   "parent_id": "practical",
+   "sort_order": 31,
+   "description": ""
+  },
+  {
+   "id": "practical-listing",
+   "name": "出品",
+   "parent_id": "practical",
+   "sort_order": 32,
+   "description": ""
+  },
+  {
+   "id": "practical-trouble",
+   "name": "トラブル",
+   "parent_id": "practical",
+   "sort_order": 33,
+   "description": ""
+  },
+  {
+   "id": "practical-technique",
+   "name": "テクニック",
+   "parent_id": "practical",
+   "sort_order": 34,
+   "description": ""
+  },
+  {
+   "id": "practical-salesperformance",
+   "name": "販売パフォーマンス",
+   "parent_id": "practical",
+   "sort_order": 35,
+   "description": ""
+  },
+  {
+   "id": "practical-assist",
+   "name": "補助",
+   "parent_id": "practical",
+   "sort_order": 36,
+   "description": ""
+  },
+  {
+   "id": "faq",
+   "name": "FAQ",
+   "parent_id": "practical",
+   "sort_order": 37,
+   "description": ""
+  },
+  {
+   "id": "practical-questions",
+   "name": "質問集",
+   "parent_id": "practical",
+   "sort_order": 38,
+   "description": ""
+  },
+  {
+   "id": "other",
+   "name": "その他",
+   "parent_id": null,
+   "sort_order": 40,
+   "description": ""
+  }
+ ],
+ "lessons": [
+  {
+   "id": "sample1",
+   "wp_id": 901,
+   "kind": "course",
+   "slug": "sample-1",
+   "title": "サンプル講座 1",
+   "category_id": "setup-basic",
+   "level_tags": [
+    "初心者"
+   ],
+   "search_tags": [
+    "メルカリ"
+   ],
+   "year_month": null,
+   "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",
+   "videos": [],
+   "links": [],
+   "sort_order": 1,
+   "published_at": "2026-09-17T00:50:58+09:00",
+   "updated_at": "2026-09-17T00:50:58+09:00",
+   "is_published": true
+  },
+  {
+   "id": "sample2",
+   "wp_id": 902,
+   "kind": "course",
+   "slug": "sample-2",
+   "title": "サンプル講座 2",
+   "category_id": "practical-listing",
+   "level_tags": [
+    "中級者"
+   ],
+   "search_tags": [
+    "メルカリ"
+   ],
+   "year_month": null,
+   "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",
+   "videos": [],
+   "links": [],
+   "sort_order": 2,
+   "published_at": "2026-09-17T00:50:58+09:00",
+   "updated_at": "2026-09-17T00:50:58+09:00",
+   "is_published": true
+  },
+  {
+   "id": "sample3",
+   "wp_id": 903,
+   "kind": "course",
+   "slug": "sample-3",
+   "title": "サンプル講座 3",
+   "category_id": "practical-procurement",
+   "level_tags": [
+    "中級者"
+   ],
+   "search_tags": [
+    "メルカリ"
+   ],
+   "year_month": null,
+   "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",
+   "videos": [],
+   "links": [],
+   "sort_order": 3,
+   "published_at": "2026-09-17T00:50:58+09:00",
+   "updated_at": "2026-09-17T00:50:58+09:00",
+   "is_published": true
+  },
+  {
+   "id": "samplem1",
+   "wp_id": 911,
+   "kind": "monthly",
+   "slug": "sample-monthly-1",
+   "title": "サンプル月1講座 2026-08",
+   "category_id": null,
+   "level_tags": [],
+   "search_tags": [],
+   "year_month": "2026-08",
+   "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",
+   "videos": [],
+   "links": [],
+   "sort_order": 1,
+   "published_at": "2026-09-17T00:50:58+09:00",
+   "updated_at": "2026-09-17T00:50:58+09:00",
+   "is_published": true
+  },
+  {
+   "id": "samplem2",
+   "wp_id": 912,
+   "kind": "monthly",
+   "slug": "sample-monthly-2",
+   "title": "サンプル月1講座 2026-07",
+   "category_id": null,
+   "level_tags": [],
+   "search_tags": [],
+   "year_month": "2026-07",
+   "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",
+   "videos": [],
+   "links": [],
+   "sort_order": 2,
+   "published_at": "2026-09-17T00:50:58+09:00",
+   "updated_at": "2026-09-17T00:50:58+09:00",
+   "is_published": true
+  },
+  {
+   "id": "samplenews",
+   "wp_id": 920,
+   "kind": "page",
+   "slug": "news-list",
+   "title": "新着情報（サンプル）",
+   "category_id": null,
+   "level_tags": [],
+   "search_tags": [],
+   "year_month": null,
+   "body_html": "<h2>新着情報</h2>\n<p>これはプレビュー用のサンプルです。</p>",
+   "videos": [],
+   "links": [],
+   "sort_order": 1,
+   "published_at": "2026-09-17T00:50:58+09:00",
+   "updated_at": "2026-09-17T00:50:58+09:00",
+   "is_published": true
+  }
+ ],
+ "settings": {
+  "entry_code": "reche2026",
+  "admin_emails": "4morikawa5@gmail.com",
+  "line_contact_url": "",
+  "notice": ""
+ }
+}

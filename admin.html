@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Re:che オンライン教材　管理</title>
+<link rel="icon" href="assets/reche-logo-transparent.png">
+<link rel="stylesheet" href="style.css?v=20260917a">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-check2" viewBox="0 0 24 24"><path d="m4.5 12.6 5 5L19.5 6.8" fill="none" stroke="#3f7d63" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="#c25b3f" stroke-width="3.2" stroke-linecap="round"/></symbol>
+</defs></svg>
+
+<div id="load">
+  <img src="assets/reche-logo-transparent.png" width="307" height="75" alt="Re:che">
+  <div class="spin"></div>
+  <p>読み込んでいます</p>
+</div>
+
+<header class="hd">
+  <div class="hdin">
+    <a href="index.html"><img class="logo" src="assets/reche-logo-transparent.png" width="307" height="75" alt="Re:che オンライン教材"></a>
+    <span class="sp"></span>
+    <span class="namepill" id="apill">管理</span>
+  </div>
+</header>
+
+<div class="adm">
+  <div class="admtabs" id="atabs" hidden>
+    <button class="chip on" data-t="members" type="button">受講者</button>
+    <button class="chip" data-t="health" type="button">ヘルスチェック</button>
+    <button class="chip" data-t="bugs" type="button">不具合の受信箱</button>
+    <button class="chip" data-t="settings" type="button">設定</button>
+    <button class="chip" data-t="lessons" type="button">講座一覧</button>
+  </div>
+  <div id="aview"></div>
+</div>
+
+<div class="modal" id="detM"><div class="bx" id="detB"></div></div>
+
+<div id="dbg"><div class="hd2"><span>画面ログ</span><button type="button" id="dbgX">閉じる</button></div><div id="dbgB"></div></div>
+
+<script src="config.js?v=20260917a"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="admin.js?v=20260917a"></script>
+</body>
+</html>
