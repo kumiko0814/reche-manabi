@@ -127,13 +127,14 @@
    "wp_id": 901,
    "kind": "course",
    "slug": "sample-1",
-   "title": "サンプル講座 1",
+   "title": "サンプル講座 1　準備のすすめかた",
    "category_id": "setup-basic",
    "level_tags": [
     "初心者"
    ],
    "search_tags": [
-    "メルカリ"
+    "メルカリ",
+    "準備"
    ],
    "year_month": null,
    "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",
@@ -149,13 +150,14 @@
    "wp_id": 902,
    "kind": "course",
    "slug": "sample-2",
-   "title": "サンプル講座 2",
+   "title": "サンプル講座 2　出品のすすめかた",
    "category_id": "practical-listing",
    "level_tags": [
     "中級者"
    ],
    "search_tags": [
-    "メルカリ"
+    "メルカリ",
+    "出品"
    ],
    "year_month": null,
    "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",
@@ -171,13 +173,14 @@
    "wp_id": 903,
    "kind": "course",
    "slug": "sample-3",
-   "title": "サンプル講座 3",
+   "title": "サンプル講座 3　仕入れのすすめかた",
    "category_id": "practical-procurement",
    "level_tags": [
     "中級者"
    ],
    "search_tags": [
-    "メルカリ"
+    "メルカリ",
+    "仕入れ"
    ],
    "year_month": null,
    "body_html": "<h2>サンプル見出し</h2>\n<p>これはプレビュー用のサンプルです。</p>\n<ul><li>表示確認用の項目その1</li><li>表示確認用の項目その2</li></ul>",

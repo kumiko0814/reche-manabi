@@ -20,7 +20,7 @@ merone.co.jp（WordPress）の会員向けコンテンツサイトを、同じ�
 | `local/sample.json` | プレビュー用の見本データ（取り込み担当が作成。無くても内蔵の見本で動きます） |
 | `qa/` | Playwright で撮ったスクリーンショット |
 
-キャッシュ対策として `?v=20260917a` を script / link に付けています。中身を更新したら
+キャッシュ対策として `?v=20260917b` を script / link に付けています。中身を更新したら
 `config.js` の `version` と各 HTML の `?v=` を同じ値にそろえて上げてください。
 
 ---
@@ -49,7 +49,7 @@ window.MANABI = {
   url: 'https://inrvprlyobghviklulcv.supabase.co',
   anon: 'sb_publishable_...',   // 公開キー
   mode: 'supabase',
-  version: '20260917a'
+  version: '20260917b'
 };
 ```
 
@@ -57,6 +57,8 @@ window.MANABI = {
 
 - `?debug=1` … 画面内にエラーログのパネルを出します（`window.onerror` / `unhandledrejection` / `console.error`）。
 - 右下の「困ったとき」… 読み込み直しと Re:che専用LINE への導線。利用者向けの緊急脱出です。
+- `index.html` の末尾に起動保険の小さなスクリプトがあります。`app.js` や外部の部品が読み込めなかったときだけ、6秒後に「読み込んでいます」を消して「困ったとき」を出します。`app.js` が動いたときは `window.__manabiBooted` が立つので、保険側は何もしません。
+- 「ようこそ」と「お問い合わせ」はログイン前でも開きます。合言葉が分からないときや画面が開かないときに、連絡先までたどり着けるようにしています。
 
 ---
 
@@ -68,6 +70,7 @@ window.MANABI = {
 init / user / onAuth
 signUp / signIn / signOut / verifyEntry / touch / setName
 loadContent  -> { categories[], lessons[], settings{} }
+loadPublicSettings -> { line_contact_url, notice }   （ログイン前でも取れる）
 loadProgress -> { lesson_id: done_at }
 setProgress(lessonId, done)
 logEvent(kind, lessonId)

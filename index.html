@@ -6,7 +6,7 @@
 <meta name="format-detection" content="telephone=no">
 <title>Re:che オンライン教材</title>
 <link rel="icon" href="assets/reche-logo-transparent.png">
-<link rel="stylesheet" href="style.css?v=20260917a">
+<link rel="stylesheet" href="style.css?v=20260917b">
 </head>
 <body>
 
@@ -62,6 +62,7 @@
   <textarea id="bugT" placeholder="例）完了を押しても印が変わりませんでした（iPhone・LINEから開きました）"></textarea>
   <div class="bb"><button class="btn ghost" id="bugC" type="button">閉じる</button><button class="btn" id="bugS" type="button">送信する</button></div>
   <div class="dn" id="bugD">届きました。ありがとうございます。確認いたします。</div>
+  <div class="err" id="bugE" hidden style="margin-top:9px;">送信できませんでした。Re:che専用LINEへ直接お知らせください。</div>
 </div></div>
 
 <div id="sos" hidden>困ったとき</div>
@@ -78,8 +79,38 @@
 
 <div id="dbg"><div class="hd2"><span>画面ログ</span><button type="button" id="dbgX">閉じる</button></div><div id="dbgB"></div></div>
 
-<script src="config.js?v=20260917a"></script>
+<script src="config.js?v=20260917b"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260917a"></script>
+<script src="app.js?v=20260917b"></script>
+
+<!-- 起動保険：app.js や外部の部品が読み込めなかったときだけ動きます -->
+<script>
+(function(){
+  function g(id){ return document.getElementById(id); }
+  setTimeout(function(){
+    if(window.__manabiBooted) return;          /* app.js が動いているときは何もしない */
+    try{
+      var l = g('load');
+      if(l){ l.className = (l.className ? l.className + ' ' : '') + 'off'; l.style.display = 'none'; }
+      var v = g('view');
+      if(v && !v.innerHTML.trim()){
+        v.innerHTML = '<div class="card"><div class="ttl">いま開くことができませんでした</div>'
+          + '<p class="lead">電波のよい場所で、もういちどお試しいただけますでしょうか。'
+          + 'それでも変わらないときは、Re:che専用LINE へこの画面のようすをお知らせください。</p>'
+          + '<button class="btn" id="sosB2" type="button">画面を読み込み直す</button></div>';
+        var b2 = g('sosB2');
+        if(b2) b2.onclick = function(){ location.reload(); };
+      }
+      var so = g('sos'), sm = g('sosM');
+      if(so){
+        so.hidden = false;
+        so.onclick = function(){ if(sm) sm.className = 'modal on'; };
+      }
+      var sr = g('sosR'); if(sr) sr.onclick = function(){ location.reload(); };
+      var sc = g('sosC'); if(sc) sc.onclick = function(){ if(sm) sm.className = 'modal'; };
+    }catch(e){}
+  }, 6000);
+})();
+</script>
 </body>
 </html>

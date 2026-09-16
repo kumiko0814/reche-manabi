@@ -19,7 +19,12 @@ function esc(s){
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function toDate(v){ if(!v) return null; var d = (v instanceof Date) ? v : new Date(String(v).replace(' ','T')); return isNaN(d.getTime()) ? null : d; }
-function fmtDate(v){ var d = toDate(v); if(!d) return '—'; return d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日（' + WD[d.getDay()] + '）'; }
+function jstShift(d){ return new Date(d.getTime() + 9 * 3600 * 1000); }
+function fmtDate(v){
+  var d = toDate(v); if(!d) return '—';
+  var j = jstShift(d);
+  return j.getUTCFullYear() + '年' + (j.getUTCMonth()+1) + '月' + j.getUTCDate() + '日（' + WD[j.getUTCDay()] + '）';
+}
 function daysSince(v){ var d = toDate(v); if(!d) return null; return Math.floor((Date.now() - d.getTime()) / 86400000); }
 function arr(v){
   if(Array.isArray(v)) return v.slice();
@@ -73,7 +78,8 @@ var DEMO = {
     { user_id:'u1', lesson_id:'c2', done_at:new Date(Date.now() - 2*86400000).toISOString() },
     { user_id:'u2', lesson_id:'c1', done_at:new Date(Date.now() - 20*86400000).toISOString() }
   ],
-  settings:{ entry_code:'reche2026', admin_emails:'4morikawa5@gmail.com', line_contact_url:'', notice:'' },
+  settings:{ entry_code:'reche2026', admin_emails:'4morikawa5@gmail.com', line_contact_url:'', notice:'',
+             cat_setup_ids:'setup', cat_practical_ids:'practical' },
   bugs:[{ id:1, member_name:'Re:cheオンライン教材', mood:'バグ報告', worry:'（見本）完了を押しても印が変わりませんでした', want:'URL: https://example/\nUA: iPhone', created_at:new Date().toISOString() }]
 };
 
@@ -135,12 +141,39 @@ function sbRest(path, opt){
     body:opt.body
   });
 }
+/* ailab_notes は他のアプリと共用している既存の表。
+   この管理画面ぶんだけを member_id で絞り、更新は必ず id で1行に限定する。 */
+var BUG_MEMBER = 'bug_reche-manabi';
+var BUGS_ERR = '';
+function bugsSelect(){
+  if(SB){
+    return SB.from('ailab_notes').select('id,member_id,member_name,mood,worry,want,created_at')
+      .eq('member_id', BUG_MEMBER).order('created_at', { ascending:false }).limit(100)
+      .then(function(r){ if(r.error) throw new Error(r.error.message || 'select'); return r.data || []; });
+  }
+  return sbRest('ailab_notes?member_id=eq.' + encodeURIComponent(BUG_MEMBER) + '&order=created_at.desc&limit=100')
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+}
+function bugMarkDone(id){
+  if(SB){
+    return SB.from('ailab_notes').update({ mood:'対応済み' })
+      .eq('id', id).eq('member_id', BUG_MEMBER)
+      .then(function(r){ if(r.error) throw new Error(r.error.message || 'update'); });
+  }
+  return sbRest('ailab_notes?id=eq.' + encodeURIComponent(id) + '&member_id=eq.' + encodeURIComponent(BUG_MEMBER),
+                { method:'PATCH', body:JSON.stringify({ mood:'対応済み' }) })
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); });
+}
 function loadBugs(){
+  BUGS_ERR = '';
   if(PREVIEW){ D.bugs = DEMO.bugs.slice(); return Promise.resolve(); }
-  return sbRest('ailab_notes?member_id=eq.bug_reche-manabi&order=created_at.desc&limit=100')
-    .then(function(r){ return r.json(); })
+  return bugsSelect()
     .then(function(j){ D.bugs = Array.isArray(j) ? j : []; })
-    .catch(function(e){ logLine('WARN', 'bugs ' + (e && e.message)); D.bugs = []; });
+    .catch(function(e){
+      logLine('WARN', 'bugs ' + (e && e.message));
+      D.bugs = [];
+      BUGS_ERR = '報告を読み込めませんでした（' + ((e && e.message) || '通信エラー') + '）。';
+    });
 }
 function loadAll(){
   if(PREVIEW){
@@ -428,10 +461,11 @@ function runHealth(){
 function renderBugs(){
   var open = D.bugs.filter(function(b){ return b.mood !== '対応済み'; }).length;
   var h = '<div class="card"><div class="ttl">不具合の受信箱</div>';
-  h += '<p class="lead">' + (D.bugs.length ? ('未対応 ' + open + '件　/　全 ' + D.bugs.length + '件') : '報告はありません。') + '</p>';
+  if(BUGS_ERR) h += '<div class="err">' + esc(BUGS_ERR) + '</div>';
+  h += '<p class="lead">' + (D.bugs.length ? ('未対応 ' + open + '件　/　全 ' + D.bugs.length + '件') : (BUGS_ERR ? '読み込めていません。' : '報告はありません。')) + '</p>';
   h += '<button class="btn ghost sm" id="bRel" type="button">読み込み直す</button></div>';
   h += '<div class="card"><div id="bList">';
-  if(!D.bugs.length) h += '<div class="empty">報告はありません。</div>';
+  if(!D.bugs.length) h += '<div class="empty">' + (BUGS_ERR ? '読み込めませんでした。読み込み直してください。' : '報告はありません。') + '</div>';
   D.bugs.forEach(function(b){
     var fin = b.mood === '対応済み';
     h += '<div class="buginfo' + (fin ? ' fin' : '') + '" data-b="' + esc(b.id) + '">';
@@ -450,12 +484,16 @@ function renderBugs(){
     btn.onclick = function(){
       var id = btn.getAttribute('data-fin');
       btn.disabled = true;
-      var p = PREVIEW ? Promise.resolve() : sbRest('ailab_notes?id=eq.' + encodeURIComponent(id), { method:'PATCH', body:JSON.stringify({ mood:'対応済み' }) })
-        .then(function(r){ if(!r.ok) throw new Error('PATCH ' + r.status); });
+      var p = PREVIEW ? Promise.resolve() : bugMarkDone(id);
       p.then(function(){
         D.bugs.forEach(function(b){ if(String(b.id) === String(id)) b.mood = '対応済み'; });
         render();
-      }).catch(function(e){ logLine('ERR', 'bugfin ' + (e && e.message)); btn.disabled = false; window.alert('更新できませんでした。'); });
+      }).catch(function(e){
+        logLine('ERR', 'bugfin ' + (e && e.message));
+        btn.disabled = false;
+        BUGS_ERR = '「対応済み」にできませんでした（' + ((e && e.message) || '通信エラー') + '）。';
+        render();
+      });
     };
   });
 }
@@ -464,10 +502,12 @@ function renderBugs(){
    タブ 4 設定
    ============================================================ */
 var SET_FIELDS = [
-  { k:'entry_code',       nm:'合言葉',                  hint:'登録のときにご記入いただく言葉です。' },
-  { k:'admin_emails',     nm:'管理者のメールアドレス',  hint:'カンマ区切りで複数ご記入いただけます。' },
-  { k:'line_contact_url', nm:'Re:che専用LINE のURL',    hint:'お問い合わせ画面のボタンの行き先になります。' },
-  { k:'notice',           nm:'ホームのお知らせ',        hint:'空にすると表示されません。' }
+  { k:'entry_code',        nm:'合言葉',                  hint:'登録のときにご記入いただく言葉です。' },
+  { k:'admin_emails',      nm:'管理者のメールアドレス',  hint:'カンマ区切りで複数ご記入いただけます。保存すると、その方の権限をその場で合わせます。' },
+  { k:'line_contact_url',  nm:'Re:che専用LINE のURL',    hint:'お問い合わせ画面のボタンの行き先になります。' },
+  { k:'notice',            nm:'ホームのお知らせ',        hint:'空にすると表示されません。' },
+  { k:'cat_setup_ids',     nm:'「セットアップ」のカテゴリ', hint:'進みぐあいの集計でセットアップに数えるカテゴリです。そのカテゴリと、ぶら下がるカテゴリがまとめて入ります。カンマ区切り。標準は setup です。' },
+  { k:'cat_practical_ids', nm:'「実践」のカテゴリ',         hint:'進みぐあいの集計で実践に数えるカテゴリです。そのカテゴリと、ぶら下がるカテゴリがまとめて入ります。カンマ区切り。標準は practical です。' }
 ];
 function renderSettings(){
   var h = '<div class="card"><div class="ttl">設定</div><p class="lead">保存すると、受講者の画面にすぐ反映されます。</p>';
@@ -485,7 +525,11 @@ function renderSettings(){
     var btn = byId('stSave'), msg = byId('stMsg');
     var rows = SET_FIELDS.map(function(f){ return { key:f.k, value:String((byId('st_' + f.k) || {}).value || '') }; });
     if(btn) btn.disabled = true;
-    var p = PREVIEW ? Promise.resolve() : SB.from('manabi_settings').upsert(rows, { onConflict:'key' }).then(function(r){ if(r.error) throw r.error; });
+    var p = PREVIEW ? Promise.resolve() : SB.from('manabi_settings').upsert(rows, { onConflict:'key' })
+      .then(function(r){ if(r.error) throw r.error; })
+      /* 管理者のメールアドレスを変えたぶんを、既に登録済みの方にも反映する */
+      .then(function(){ return SB.rpc('manabi_sync_admins'); })
+      .then(function(r){ if(r && r.error) logLine('WARN', 'sync_admins ' + r.error.message); });
     p.then(function(){
       rows.forEach(function(r){ D.settings[r.key] = r.value; });
       if(msg) msg.innerHTML = '<div class="ok" style="margin:10px 0 0;">保存しました。</div>';

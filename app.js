@@ -18,9 +18,12 @@ function toDate(v){
   var d = (v instanceof Date) ? v : new Date(String(v).replace(' ', 'T'));
   return isNaN(d.getTime()) ? null : d;
 }
+/* 端末の時計が海外に合っていても、日付と曜日は日本時間で表示する */
+function jstShift(d){ return new Date(d.getTime() + 9 * 3600 * 1000); }
 function fmtDate(v){
   var d = toDate(v); if(!d) return '';
-  return d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日（' + WD[d.getDay()] + '）';
+  var j = jstShift(d);
+  return j.getUTCFullYear() + '年' + (j.getUTCMonth()+1) + '月' + j.getUTCDate() + '日（' + WD[j.getUTCDay()] + '）';
 }
 function fmtYM(ym){
   if(!ym) return 'そのほか';
@@ -165,6 +168,11 @@ function makeLocal(){
     },
     user:function(){ return user; },
     onAuth:function(f){ cbs.push(f); },
+    loadPublicSettings:function(){
+      return this.loadContent().then(function(c){
+        return { line_contact_url:c.settings.line_contact_url || '', notice:c.settings.notice || '' };
+      });
+    },
     loadContent:function(){
       if(content) return Promise.resolve(content);
       if(location.protocol === 'file:'){
@@ -261,6 +269,13 @@ function makeSupabase(){
     },
     user:function(){ return user; },
     onAuth:function(f){ cbs.push(f); },
+    loadPublicSettings:function(){
+      return sb.rpc('manabi_public_settings').then(function(res){
+        if(res.error) throw res.error;
+        var v = normSettings(res.data);
+        return { line_contact_url:v.line_contact_url || '', notice:v.notice || '' };
+      });
+    },
     loadContent:function(){
       if(content) return Promise.resolve(content);
       return Promise.all([
@@ -570,12 +585,14 @@ function setView(html){
 }
 
 var SCREENS = {};
+/* ログインしていなくても開ける画面（困ったときの導線を必ず残す） */
+var OPEN_SCREENS = { welcome:1, contact:1 };
 function route(){
   closeDrawer();
   var p = parts(), head = p[0] || '';
   var u = me();
   if(!u || !u.entry_ok){
-    if(head !== 'welcome'){ go('/welcome'); return; }
+    if(!OPEN_SCREENS[head]){ go('/welcome'); return; }
   } else if(head === 'welcome'){ go('/'); return; }
   var fn = SCREENS[head] || SCREENS[''];
   var hdr = byId('hdr'), tabs = byId('tabs'), side = byId('side');
@@ -608,6 +625,31 @@ function tabKey(head){
 var WMODE = 'signup';
 SCREENS.welcome = function(){
   var h = '';
+  if(WMODE === 'entry'){
+    h += '<div class="card" style="text-align:center;">';
+    h += '<img src="assets/reche-logo-transparent.png" width="307" height="75" alt="Re:che オンライン教材" style="width:200px; margin:2px auto 12px;">';
+    h += '</div>';
+    h += '<div class="card"><div class="ttl">合言葉のご記入</div>';
+    h += '<p class="lead">ログインできました。はじめに合言葉をご記入ください。</p>';
+    h += '<div id="wErr"></div>';
+    h += '<div class="field"><label for="enCode">合言葉</label><input id="enCode" type="text" autocomplete="off" placeholder="お渡ししている合言葉">';
+    h += '<div class="hint">合言葉は Re:che専用LINE でお伝えしています。お手元に見あたらないときは、専用LINEへひとことお送りください。</div></div>';
+    h += '<button class="btn" id="enBtn" type="button">すすむ</button>';
+    h += '<div class="btnrow" style="margin-top:12px;"><a class="btn ghost" href="#/contact">Re:che専用LINEへ</a>';
+    h += '<button class="btn ghost" id="enOut" type="button">ログアウト</button></div></div>';
+    setView(h);
+    on(byId('enBtn'), 'click', doEntry);
+    var ei = byId('enCode');
+    if(ei) ei.addEventListener('keydown', function(e){ if(e.key === 'Enter') doEntry(); });
+    on(byId('enOut'), 'click', function(){
+      DS.signOut().then(function(){
+        WMODE = 'login'; P = {};
+        lsDel('manabi_profile_cache'); lsDel('manabi_prog_cache');
+        route();
+      });
+    });
+    return;
+  }
   h += '<div class="card" style="text-align:center;">';
   h += '<img src="assets/reche-logo-transparent.png" width="307" height="75" alt="Re:che オンライン教材" style="width:200px; margin:2px auto 12px;">';
   h += '<div class="chibi" style="text-align:left;"><img src="assets/kumiko-head-avatar.png" alt="">';
@@ -675,15 +717,24 @@ function doSignIn(){
   if(!f.email.trim() || !f.password){ wErr('メールアドレスとパスワードをご記入ください。'); return; }
   if(b){ b.disabled = true; b.textContent = '確認中'; }
   DS.signIn(f).then(function(u){
-    if(u && !u.entry_ok) return askEntry().then(afterSignIn);
-    return afterSignIn();
-  }).then(function(){ go('/'); route(); })
-    .catch(function(e){ logLine('ERR', 'signin ' + (e && e.message)); wErr(authMsg(e)); if(b){ b.disabled = false; b.textContent = 'ログイン'; } });
+    if(u && !u.entry_ok){ WMODE = 'entry'; route(); return null; }
+    return afterSignIn().then(function(){ go('/'); route(); });
+  }).catch(function(e){ logLine('ERR', 'signin ' + (e && e.message)); wErr(authMsg(e)); if(b){ b.disabled = false; b.textContent = 'ログイン'; } });
 }
-function askEntry(){
-  var code = window.prompt('合言葉をご記入ください');
-  if(code == null) return Promise.reject(new Error('ENTRY'));
-  return DS.verifyEntry(code).then(function(okc){ if(!okc) throw new Error('ENTRY'); });
+/* 合言葉の再入力（画面内フォーム） */
+function doEntry(){
+  var b = byId('enBtn'), code = String((byId('enCode') || {}).value || '').trim();
+  wErr('');
+  if(!code){ wErr('合言葉をご記入ください。'); return; }
+  if(b){ b.disabled = true; b.textContent = '確認中'; }
+  DS.verifyEntry(code).then(function(okc){
+    if(!okc) throw new Error('ENTRY');
+    return afterSignIn().then(function(){ WMODE = 'signup'; go('/'); route(); });
+  }).catch(function(e){
+    logLine('ERR', 'entry ' + (e && e.message));
+    wErr(authMsg(e));
+    if(b){ b.disabled = false; b.textContent = 'すすむ'; }
+  });
 }
 function afterSignIn(){
   return DS.loadContent().then(function(c){
@@ -1018,6 +1069,8 @@ SCREENS.contact = function(){
   h += '<div class="kv"><b>パスワードを忘れた</b><span>こちらで設定し直します</span></div>';
   h += '<div class="kv"><b>画面が開かない</b><span>右下の「困ったとき」からどうぞ</span></div>';
   h += '</div>';
+  var u = me();
+  if(!u || !u.entry_ok) h += '<div class="card"><a class="btn sub" href="#/welcome">ようこそ画面にもどる</a></div>';
   setView(h);
 };
 
@@ -1144,6 +1197,24 @@ function copyProgress(){
     if(okc) okmsg(); else ngmsg();
   }catch(e2){ ngmsg(); }
 }
+/* 横はばのはみ出し。body の overflow-x:hidden に隠れないよう、要素の右端も見る。 */
+function widthCheck(){
+  var de = document.documentElement, bd = document.body;
+  var w = de.clientWidth || window.innerWidth || 0;
+  var over = [];
+  if(de.scrollWidth > w + 2) over.push('画面全体');
+  if(bd && bd.scrollWidth > w + 2) over.push('本文の枠');
+  var sel = ['#view', '#view .card', '#view .tblwrap', '#hdr .hdin', '#tabs'];
+  sel.forEach(function(q){
+    var nodes = document.querySelectorAll(q);
+    for(var i = 0; i < nodes.length; i++){
+      var r = nodes[i].getBoundingClientRect();
+      if(r.width > 0 && (r.right > w + 2 || r.left < -2)){ over.push(q); return; }
+    }
+  });
+  var okw = over.length === 0;
+  return { ok:okw, rs:okw ? 'はみ出しはありません' : ('はみ出しがあります（' + over.slice(0, 2).join('・') + '）') };
+}
 function runSelfCheck(){
   var box = byId('pcres'); if(!box) return;
   box.innerHTML = '<p class="muted" style="margin:10px 0 0;">確認しています</p>';
@@ -1160,10 +1231,7 @@ function runSelfCheck(){
           var n = Object.keys(p || {}).length;
           return { ok:true, rs:'完了 ' + n + '件を読みもどせました' };
         }).catch(function(){ return { ok:false, rs:'読みもどせませんでした' }; }); } },
-    { nm:'画面の横はばの表示', run:function(){
-        var e = document.documentElement;
-        var okw = e.scrollWidth <= e.clientWidth + 2;
-        return Promise.resolve({ ok:okw, rs:okw ? 'はみ出しはありません' : 'はみ出しがあります' }); } }
+    { nm:'画面の横はばの表示', run:function(){ return Promise.resolve(widthCheck()); } }
   ];
   items.reduce(function(chain, it){
     return chain.then(function(acc){
@@ -1221,7 +1289,11 @@ SCREENS.me = function(){
   });
   on(byId('mbug'), 'click', function(){ var m = byId('bugM'); if(m) m.classList.add('on'); });
   on(byId('mout'), 'click', function(){
-    DS.signOut().then(function(){ P = {}; go('/welcome'); route(); });
+    DS.signOut().then(function(){
+      P = {}; WMODE = 'login';
+      lsDel('manabi_profile_cache'); lsDel('manabi_prog_cache');
+      go('/welcome'); route();
+    });
   });
 };
 
@@ -1237,6 +1309,7 @@ function makeEscape(content, profile){
     user:function(){ return user; },
     onAuth:function(){},
     loadContent:function(){ return Promise.resolve(content); },
+    loadPublicSettings:function(){ return Promise.resolve({ line_contact_url:content.settings.line_contact_url || '', notice:content.settings.notice || '' }); },
     signUp:noGo, signIn:noGo,
     signOut:function(){ lsDel('manabi_local_sess'); user = null; return Promise.resolve(); },
     verifyEntry:function(){ return Promise.resolve(false); },
@@ -1266,7 +1339,7 @@ function wireChrome(){
   on(byId('dwbd'), 'click', closeDrawer);
   var bl = byId('bugL'), bm = byId('bugM');
   if(bl){ bl.hidden = false; bl.onclick = function(){ if(bm) bm.classList.add('on'); }; }
-  on(byId('bugC'), 'click', function(){ if(bm) bm.classList.remove('on'); var d = byId('bugD'); if(d) d.style.display = 'none'; });
+  on(byId('bugC'), 'click', function(){ if(bm) bm.classList.remove('on'); var d = byId('bugD'); if(d) d.style.display = 'none'; var e2 = byId('bugE'); if(e2) e2.hidden = true; });
   on(byId('bugS'), 'click', sendBug);
   var so = byId('sos'), sm = byId('sosM');
   if(so){ so.hidden = false; so.onclick = function(){ if(sm) sm.classList.add('on'); }; }
@@ -1278,34 +1351,40 @@ function wireChrome(){
 }
 function sendBug(){
   var ta = byId('bugT'), btn = byId('bugS'), dn = byId('bugD');
+  var er = byId('bugE');
   var t = ta ? String(ta.value || '').trim() : '';
   if(!t){ if(ta) ta.focus(); return; }
+  if(er) er.hidden = true;
   if(btn) btn.disabled = true;
-  var u = me();
   function done(){
     if(dn) dn.style.display = 'block';
     if(ta) ta.value = '';
     if(btn) btn.disabled = false;
     setTimeout(function(){ var m = byId('bugM'); if(m) m.classList.remove('on'); if(dn) dn.style.display = 'none'; }, 1800);
   }
+  function ng(e){
+    logLine('ERR', 'bug ' + (e && e.message));
+    if(btn) btn.disabled = false;
+    if(er) er.hidden = false;
+    else window.alert('送信できませんでした。Re:che専用LINEへ直接お知らせください。');
+  }
   if(PREVIEW){ done(); return; }
+  /* お名前やメールアドレスは自動では付けません（書きたい方は本文にご記入ください） */
   var body = {
     member_id:'bug_reche-manabi',
     member_name:'Re:cheオンライン教材',
     mood:'バグ報告',
-    worry:t + '\n\nお名前: ' + ((u && u.name) || '') + ' / ' + ((u && u.email) || ''),
+    worry:t,
     want:'URL: ' + location.href.slice(0, 200) + '\nUA: ' + String(navigator.userAgent).slice(0, 200)
   };
   fetch(CFG.url + '/rest/v1/ailab_notes', {
     method:'POST',
     headers:{ apikey:CFG.anon, Authorization:'Bearer ' + CFG.anon, 'Content-Type':'application/json' },
     body:JSON.stringify(body)
-  }).then(function(){ done(); })
-    .catch(function(e){
-      logLine('ERR', 'bug ' + (e && e.message));
-      if(btn) btn.disabled = false;
-      window.alert('お送りできませんでした。通信状況をご確認のうえ、もう一度お試しください。');
-    });
+  }).then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    done();
+  }).catch(ng);
 }
 
 /* ============================================================
@@ -1319,7 +1398,19 @@ function bootReal(){
   return DS.init().then(function(){
     DS.onAuth(function(){ /* ログイン状態の変化は画面遷移で反映します */ });
     var u = me();
-    if(!u) return DS.loadContent().then(function(c){ C = c; });
+    if(u && !u.entry_ok) WMODE = 'entry';
+    if(!u || !u.entry_ok){
+      /* まだ講座は読めない。お問い合わせ画面に出す連絡先だけ取っておく。 */
+      return DS.loadPublicSettings().then(function(v){
+        C.settings.line_contact_url = v.line_contact_url;
+        C.settings.notice = v.notice;
+      }).catch(function(e){
+        logLine('WARN', 'settings ' + (e && e.message));
+        /* 前に開いたことがあるのに今日はつながらない、というときは
+           前回の講座一覧（避難モード）に切りかえる */
+        if(!u && jGet('manabi_profile_cache', null) && jGet(CACHE_KEY, null)) throw e;
+      });
+    }
     return afterSignIn();
   });
 }
@@ -1353,6 +1444,7 @@ function renderDead(){
 function boot(){
   initDebug();
   wireChrome();
+  window.__manabiBooted = true;   /* index.html の起動保険に「もう大丈夫」と伝える */
   var timer = null;
   var limit = new Promise(function(_, rej){ timer = setTimeout(function(){ rej(new Error('TIMEOUT')); }, 8000); });
   var started;
@@ -1363,6 +1455,7 @@ function boot(){
     .catch(function(e){
       if(timer) clearTimeout(timer);
       logLine('ERR', 'boot ' + (e && e.message ? e.message : e));
+      DS = null;   /* 途中で止まったデータ層は使わない（空の画面を出さないため） */
       return useCache();
     })
     .then(function(alive){
