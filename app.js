@@ -600,6 +600,7 @@ function route(){
   if(hdr) hdr.hidden = !signedIn;
   if(tabs) tabs.hidden = !signedIn;
   if(side) side.style.display = signedIn ? '' : 'none';
+  try{ document.body.classList.toggle('noside', !signedIn); }catch(e){}
   var pill = byId('npill');
   if(pill) pill.textContent = (u && u.name) ? (u.name + ' さん') : 'わたし';
   paintNav(signedIn ? tabKey(head) : '');
